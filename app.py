@@ -13,13 +13,19 @@ server = app.server
 heatmap_df = pd.read_excel("Tesst_But.xlsx")
 resultats_df = pd.read_excel("graphe3_data.xlsx")
 performances_df = pd.read_excel("graphe4.xlsx")
-resultats_df.columns = resultats_df.columns.str.strip()  # Nettoyage des noms de colonnes
+
+# Nettoyer les noms de colonnes dans resultats_df
+resultats_df.columns = resultats_df.columns.str.strip()
 
 # Nettoyer les noms de colonnes dans performances_df
 performances_df.columns = performances_df.columns.str.strip()  # Enlever les espaces
 performances_df.columns = performances_df.columns.str.replace("\t", "")  # Enlever les tabulations
 
-# Calcul de la différence de buts pour chaque match dans les résultats
+# Vérification de la forme des données pour les performances
+print(resultats_df.columns)  # Vérifie que les colonnes sont correctement nettoyées
+print(performances_df.columns)  # Vérifie aussi les colonnes de performances_df
+
+# Maintenant, tu peux utiliser ces colonnes sans problème
 resultats_df['Diff_Buts'] = resultats_df['Buts Marqués'] - resultats_df['Buts Encaissés']
 
 # Définition des pages
