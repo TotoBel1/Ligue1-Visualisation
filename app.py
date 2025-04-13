@@ -102,5 +102,6 @@ def display_page(pathname):
         return pages["Performances"]
     return pages["Accueil"]
 
+# Remplacement de `run_server()` par `run()`
 if __name__ == "__main__":
-    app.run_server(host="0.0.0.0", port=8050, debug=True)
+    app.run(debug=True, host="0.0.0.0", port=8050)
