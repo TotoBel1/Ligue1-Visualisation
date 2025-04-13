@@ -19,9 +19,8 @@ resultats_df.columns = resultats_df.columns.str.strip()  # Nettoyage des noms de
 performances_df.columns = performances_df.columns.str.strip()  # Enlever les espaces
 performances_df.columns = performances_df.columns.str.replace("\t", "")  # Enlever les tabulations
 
-# Vérification de la forme des données pour les performances
-print(performances_df.shape)
-print(performances_df.head())
+# Calcul de la différence de buts pour chaque match dans les résultats
+resultats_df['Diff_Buts'] = resultats_df['Buts Marqués'] - resultats_df['Buts Encaissés']
 
 # Définition des pages
 pages = {
@@ -43,12 +42,19 @@ pages = {
         html.H2("\ud83d\uddd5\ufe0f Historique des résultats"),
         dcc.Graph(figure=go.Figure([  # Graphique des résultats
             go.Bar(name="Victoires", x=resultats_df["Journée"],
-                   y=[1 if r == "Victoire" else 0 for r in resultats_df["Résultat"]], marker_color="green"),
+                   y=[r if r == "Victoire" else 0 for r in resultats_df["Résultat"]], marker_color="green"),
             go.Bar(name="Égalités", x=resultats_df["Journée"],
-                   y=[1 if r == "Égalité" else 0 for r in resultats_df["Résultat"]], marker_color="orange"),
+                   y=[0.5 if r == "Égalité" else 0 for r in resultats_df["Résultat"]], marker_color="orange"),
             go.Bar(name="Défaites", x=resultats_df["Journée"],
-                   y=[1 if r == "Défaite" else 0 for r in resultats_df["Résultat"]], marker_color="red"),
-        ]).update_layout(barmode="stack", title="Historique des résultats"))
+                   y=[-1 if r == "Défaite" else 0 for r in resultats_df["Résultat"]], marker_color="red"),
+            go.Scatter(
+                name="Différence de buts", 
+                x=resultats_df["Journée"], 
+                y=resultats_df["Diff_Buts"], 
+                mode="lines", 
+                line=dict(color="blue", width=2)
+            )
+        ]).update_layout(barmode="stack", title="Historique des résultats et différence de buts"))
     ]),
 
     "Performances": html.Div([  # Évolution des performances
@@ -56,18 +62,27 @@ pages = {
         dcc.Graph(figure=px.line(
             performances_df,
             x="Journée",
-            y=["Buts Marqués", "Buts Encaissés", "Clean Sheets"],
+            y=["Buts Marqués", "Buts Encaissés"],
             markers=True,
-            title="Évolution des performances"
+            title="Évolution des buts et buts encaissés"
+        )),
+        
+        # Graphique des clean sheets
+        dcc.Graph(figure=px.line(
+            performances_df,
+            x="Journée",
+            y="Clean Sheets",
+            markers=True,
+            title="Clean Sheets"
         ))
     ])
 }
 
 # Barre de navigation stylée
 navbar = dbc.Navbar(
-    dbc.Container([
+    dbc.Container([ 
         html.A(
-            dbc.Row([
+            dbc.Row([ 
                 dbc.Col(html.Img(src="https://img.icons8.com/color/48/combo-chart--v1.png", height="30px")),
                 dbc.Col(html.Div("AS Laval M - Tableau de Bord", className="navbar-title")),
             ], align="center", className="g-2"),
@@ -112,5 +127,3 @@ def display_page(pathname):
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8000)
-
-
