@@ -1,22 +1,17 @@
 import dash
-from dash import dcc, html
+from dash import dcc, html, Input, Output
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import os
 
 # Initialisation de l'application Dash
-app = dash.Dash(__name__)
-server = app.server  # Nécessaire pour Render
+app = dash.Dash(__name__, suppress_callback_exceptions=True)
+server = app.server
 
-# Exemple de graphique (ajuste-le à ton projet)
-df = pd.DataFrame({
-    "x": [1, 2, 3],
-    "y": [4, 5, 6]
-})
-fig = px.line(df, x="x", y="y")
+# === FIGURES ===
 
-# 🔵 1. HEATMAP DES BUTS
+### 🔵 1. HEATMAP DES BUTS ###
 df_heatmap = pd.read_excel("Tesst_But.xlsx")
 df_pivot = df_heatmap.pivot(index="Joueur", columns="Match", values="Buts").fillna(0)
 
@@ -29,7 +24,7 @@ fig_heatmap = px.imshow(
 )
 fig_heatmap.update_layout(title="Heatmap des buts par match", dragmode=False)
 
-# 🔴 2. HISTORIQUE RÉSULTATS
+### 🔴 2. HISTORIQUE RÉSULTATS ###
 df_resultats = pd.read_excel("graphe3_data.xlsx")
 match_dates = df_resultats["Journée"].tolist()
 resultats = df_resultats["Résultat"].tolist()
@@ -73,7 +68,7 @@ fig_resultats.update_layout(
     height=500
 )
 
-# 🟢 3. ÉVOLUTION DE PERFORMANCE
+### 🟢 3. ÉVOLUTION DE PERFORMANCE ###
 df_perf = pd.read_excel("graphe4.xlsx")
 df_perf.columns = df_perf.columns.str.strip()
 
@@ -82,27 +77,62 @@ fig_perf = px.line(df_perf, x="Journée", y=["Buts Marqués", "Buts Encaissés",
                    labels={"value": "Nombre", "variable": "Statistiques"},
                    markers=True)
 
-# 🌐 LAYOUT DE L'APP
-app.layout = html.Div([
-    html.H1("Visualisation de la Ligue 1 du Québec - AS Laval M", style={"textAlign": "center"}),
+# === PAGES ===
 
-    html.Div([
-        html.H2("1️⃣ Heatmap des buts par match"),
-        dcc.Graph(figure=fig_heatmap)
-    ], style={"marginBottom": "50px"}),
-
-    html.Div([
-        html.H2("2️⃣ Historique des Résultats"),
-        dcc.Graph(figure=fig_resultats)
-    ], style={"marginBottom": "50px"}),
-
-    html.Div([
-        html.H2("3️⃣ Évolution des performances"),
-        dcc.Graph(figure=fig_perf)
-    ])
+accueil_layout = html.Div([
+    html.H1("🏠 Accueil - Visualisation Ligue 1 du Québec", style={"textAlign": "center", "color": "#2c3e50"}),
+    html.P("Bienvenue dans l'application de visualisation de l'équipe AS Laval M. Utilisez le menu pour explorer les statistiques !",
+           style={"textAlign": "center", "fontSize": "18px"})
 ])
 
-# Démarrer l'application avec la configuration du port de Render
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8050))  # Utiliser le port spécifié par Render (ou 8050 par défaut)
+heatmap_layout = html.Div([
+    html.H2("1️⃣ Heatmap des buts par match", style={"color": "#2980b9"}),
+    dcc.Graph(figure=fig_heatmap)
+])
+
+resultats_layout = html.Div([
+    html.H2("2️⃣ Historique des Résultats", style={"color": "#c0392b"}),
+    dcc.Graph(figure=fig_resultats)
+])
+
+perf_layout = html.Div([
+    html.H2("3️⃣ Évolution des Performances", style={"color": "#27ae60"}),
+    dcc.Graph(figure=fig_perf)
+])
+
+# === APP LAYOUT AVEC MENU ===
+
+app.layout = html.Div([
+    html.Div([
+        html.H1("📊 AS Laval M - Tableau de Bord", style={"textAlign": "center", "marginBottom": "20px", "color": "#34495e"}),
+        dcc.Location(id='url', refresh=False),
+        html.Div([
+            dcc.Link("🏠 Accueil", href='/', style={'padding': '10px'}),
+            dcc.Link("🔥 Heatmap", href='/heatmap', style={'padding': '10px'}),
+            dcc.Link("📅 Résultats", href='/resultats', style={'padding': '10px'}),
+            dcc.Link("📈 Performances", href='/performances', style={'padding': '10px'}),
+        ], style={"textAlign": "center", "marginBottom": "40px", "backgroundColor": "#ecf0f1", "padding": "10px"}),
+
+        html.Div(id='page-content')
+    ], style={"fontFamily": "Arial, sans-serif", "padding": "20px"})
+])
+
+# === CALLBACK DE NAVIGATION ===
+
+@app.callback(Output('page-content', 'children'),
+              Input('url', 'pathname'))
+def display_page(pathname):
+    if pathname == '/heatmap':
+        return heatmap_layout
+    elif pathname == '/resultats':
+        return resultats_layout
+    elif pathname == '/performances':
+        return perf_layout
+    else:
+        return accueil_layout
+
+# === RUN SERVEUR ===
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 8050))
     app.run(host='0.0.0.0', port=port, debug=False)
