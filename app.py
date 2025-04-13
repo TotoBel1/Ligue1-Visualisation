@@ -1,138 +1,106 @@
 import dash
-from dash import dcc, html, Input, Output
+from dash import html, dcc, callback, Output, Input
+import dash_bootstrap_components as dbc
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
-import os
 
-# Initialisation de l'application Dash
-app = dash.Dash(__name__, suppress_callback_exceptions=True)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app.title = "AS Laval M - Dashboard"
 server = app.server
 
-# === FIGURES ===
+# Chargement des données
+heatmap_df = pd.read_excel("Tesst_But.xlsx")
+resultats_df = pd.read_excel("graphe3_data.xlsx")
+performances_df = pd.read_excel("graphe4.xlsx")
+performances_df.columns = performances_df.columns.str.strip()
 
-### 🔵 1. HEATMAP DES BUTS ###
-df_heatmap = pd.read_excel("Tesst_But.xlsx")
-df_pivot = df_heatmap.pivot(index="Joueur", columns="Match", values="Buts").fillna(0)
+# Définition des pages
+pages = {
+    "Accueil": html.Div([
+        html.H2("Bienvenue sur le tableau de bord de l'\u00e9quipe AS Laval M !", style={"textAlign": "center"}),
+        html.P("Utilisez le menu ci-dessus pour explorer les statistiques.", style={"textAlign": "center"})
+    ]),
 
-fig_heatmap = px.imshow(
-    df_pivot,
-    labels=dict(x="Match", y="Joueur", color="Buts marqués"),
-    x=df_pivot.columns,
-    y=df_pivot.index,
-    color_continuous_scale="Blues"
-)
-fig_heatmap.update_layout(title="Heatmap des buts par match", dragmode=False)
+    "Heatmap": html.Div([
+        html.H2("\ud83d\udcca Heatmap des buts par match"),
+        dcc.Graph(figure=px.imshow(
+            heatmap_df.pivot(index="Joueur", columns="Match", values="Buts").fillna(0),
+            labels=dict(x="Match", y="Joueur", color="Buts marqu\u00e9s"),
+            color_continuous_scale="Blues"
+        ))
+    ]),
 
-### 🔴 2. HISTORIQUE RÉSULTATS ###
-df_resultats = pd.read_excel("graphe3_data.xlsx")
-match_dates = df_resultats["Journée"].tolist()
-resultats = df_resultats["Résultat"].tolist()
-adversaires = df_resultats["Adversaire"].tolist()
-scores = df_resultats["Score"].tolist()
+    "R\u00e9sultats": html.Div([
+        html.H2("\ud83d\uddd5\ufe0f Historique des r\u00e9sultats"),
+        dcc.Graph(figure=go.Figure([
+            go.Bar(name="Victoires", x=resultats_df["Journ\u00e9e"],
+                   y=[1 if r == "Victoire" else 0 for r in resultats_df["R\u00e9sultat"]], marker_color="green"),
+            go.Bar(name="\u00c9galit\u00e9s", x=resultats_df["Journ\u00e9e"],
+                   y=[1 if r == "\u00c9galit\u00e9" else 0 for r in resultats_df["R\u00e9sultat"]], marker_color="orange"),
+            go.Bar(name="D\u00e9faites", x=resultats_df["Journ\u00e9e"],
+                   y=[1 if r == "D\u00e9faite" else 0 for r in resultats_df["R\u00e9sultat"]], marker_color="red"),
+        ]).update_layout(barmode="stack", title="Historique des r\u00e9sultats"))
+    ]),
 
-victoires = [1 if r == "Victoire" else 0 for r in resultats]
-egalites = [1 if r == "Égalité" else 0 for r in resultats]
-defaites = [1 if r == "Défaite" else 0 for r in resultats]
+    "Performances": html.Div([
+        html.H2("\ud83d\udcc8 \u00c9volution des performances"),
+        dcc.Graph(figure=px.line(
+            performances_df,
+            x="Journ\u00e9e",
+            y=["Buts Marqu\u00e9s", "Buts Encaiss\u00e9s", "Clean Sheets"],
+            markers=True,
+            title="\u00c9volution des performances"
+        ))
+    ])
+}
 
-fig_resultats = go.Figure(data=[
-    go.Bar(name='Victoires', x=match_dates, y=victoires, marker_color='green'),
-    go.Bar(name='Égalités', x=match_dates, y=egalites, marker_color='yellow'),
-    go.Bar(name='Défaites', x=match_dates, y=defaites, marker_color='red')
-])
-
-annotations = []
-for i, date in enumerate(match_dates):
-    annotations.append(
-        dict(
-            x=date,
-            y=1,
-            text=f"{adversaires[i]}<br>{scores[i]}",
-            showarrow=True,
-            arrowhead=2,
-            ax=0,
-            ay=-100,
-            font=dict(size=10, color="black"),
-            textangle=45
+# Barre de navigation styl\u00e9e
+navbar = dbc.Navbar(
+    dbc.Container([
+        html.A(
+            dbc.Row([
+                dbc.Col(html.Img(src="https://img.icons8.com/color/48/combo-chart--v1.png", height="30px")),
+                dbc.Col(html.Div("AS Laval M - Tableau de Bord", className="navbar-title")),
+            ], align="center", className="g-2"),
+            href="/",
+            style={"textDecoration": "none"},
+        ),
+        dbc.Nav(
+            [
+                dbc.NavLink("Accueil", href="/", id="Accueil-link", active="exact"),
+                dbc.NavLink("Heatmap", href="/heatmap", id="Heatmap-link", active="exact"),
+                dbc.NavLink("R\u00e9sultats", href="/resultats", id="R\u00e9sultats-link", active="exact"),
+                dbc.NavLink("Performances", href="/performances", id="Performances-link", active="exact"),
+            ],
+            className="ml-auto",
+            navbar=True,
         )
-    )
-
-fig_resultats.update_layout(
-    title="Historique des Résultats de l'équipe AS Laval M",
-    xaxis_title="Journées",
-    yaxis_title="Nombre de Résultats",
-    barmode="stack",
-    template="plotly_white",
-    annotations=annotations,
-    width=900,
-    height=500
+    ]),
+    color="light",
+    dark=False,
+    className="shadow-sm mb-4"
 )
 
-### 🟢 3. ÉVOLUTION DE PERFORMANCE ###
-df_perf = pd.read_excel("graphe4.xlsx")
-df_perf.columns = df_perf.columns.str.strip()
-
-fig_perf = px.line(df_perf, x="Journée", y=["Buts Marqués", "Buts Encaissés", "Clean Sheets"],
-                   title="Performance de l'équipe sur 20 journées",
-                   labels={"value": "Nombre", "variable": "Statistiques"},
-                   markers=True)
-
-# === PAGES ===
-
-accueil_layout = html.Div([
-    html.H1("🏠 Accueil - Visualisation Ligue 1 du Québec", style={"textAlign": "center", "color": "#2c3e50"}),
-    html.P("Bienvenue dans l'application de visualisation de l'équipe AS Laval M. Utilisez le menu pour explorer les statistiques !",
-           style={"textAlign": "center", "fontSize": "18px"})
-])
-
-heatmap_layout = html.Div([
-    html.H2("1️⃣ Heatmap des buts par match", style={"color": "#2980b9"}),
-    dcc.Graph(figure=fig_heatmap)
-])
-
-resultats_layout = html.Div([
-    html.H2("2️⃣ Historique des Résultats", style={"color": "#c0392b"}),
-    dcc.Graph(figure=fig_resultats)
-])
-
-perf_layout = html.Div([
-    html.H2("3️⃣ Évolution des Performances", style={"color": "#27ae60"}),
-    dcc.Graph(figure=fig_perf)
-])
-
-# === APP LAYOUT AVEC MENU ===
-
+# Layout principal
 app.layout = html.Div([
-    html.Div([
-        html.H1("📊 AS Laval M - Tableau de Bord", style={"textAlign": "center", "marginBottom": "20px", "color": "#34495e"}),
-        dcc.Location(id='url', refresh=False),
-        html.Div([
-            dcc.Link("🏠 Accueil", href='/', style={'padding': '10px'}),
-            dcc.Link("🔥 Heatmap", href='/heatmap', style={'padding': '10px'}),
-            dcc.Link("📅 Résultats", href='/resultats', style={'padding': '10px'}),
-            dcc.Link("📈 Performances", href='/performances', style={'padding': '10px'}),
-        ], style={"textAlign": "center", "marginBottom": "40px", "backgroundColor": "#ecf0f1", "padding": "10px"}),
-
-        html.Div(id='page-content')
-    ], style={"fontFamily": "Arial, sans-serif", "padding": "20px"})
+    dcc.Location(id="url"),
+    navbar,
+    html.Div(id="page-content", style={"padding": "20px"})
 ])
 
-# === CALLBACK DE NAVIGATION ===
-
-@app.callback(Output('page-content', 'children'),
-              Input('url', 'pathname'))
+@callback(
+    Output("page-content", "children"),
+    [Input("url", "pathname")]
+)
 def display_page(pathname):
-    if pathname == '/heatmap':
-        return heatmap_layout
-    elif pathname == '/resultats':
-        return resultats_layout
-    elif pathname == '/performances':
-        return perf_layout
-    else:
-        return accueil_layout
+    if pathname == "/heatmap":
+        return pages["Heatmap"]
+    elif pathname == "/resultats":
+        return pages["R\u00e9sultats"]
+    elif pathname == "/performances":
+        return pages["Performances"]
+    return pages["Accueil"]
 
-# === RUN SERVEUR ===
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8050))
-    app.run(host='0.0.0.0', port=port, debug=False)
+if __name__ == "__main__":
+    app.run_server(host="0.0.0.0", port=8050, debug=True)
