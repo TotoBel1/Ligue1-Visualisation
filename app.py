@@ -15,6 +15,10 @@ resultats_df = pd.read_excel("graphe3_data.xlsx")
 performances_df = pd.read_excel("graphe4.xlsx")
 resultats_df.columns = resultats_df.columns.str.strip()  # Nettoyage des noms de colonnes
 
+# Nettoyer les noms de colonnes dans performances_df
+performances_df.columns = performances_df.columns.str.strip()  # Enlever les espaces
+performances_df.columns = performances_df.columns.str.replace("\t", "")  # Enlever les tabulations
+
 # Vérification de la forme des données pour les performances
 print(performances_df.shape)
 print(performances_df.head())
