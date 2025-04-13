@@ -2,9 +2,10 @@ import dash
 from dash import html, dcc, callback, Output, Input
 import dash_bootstrap_components as dbc
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
+import plotly.express as px
 
+# Initialisation de l'application Dash
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "AS Laval M - Dashboard"
 server = app.server
@@ -31,31 +32,77 @@ pages = {
         ))
     ]),
 
-    "R\u00e9sultats": html.Div([
-        html.H2("\ud83d\uddd5\ufe0f Historique des r\u00e9sultats"),
+    "Résultats": html.Div([
+        html.H2("\ud83d\uddd5\ufe0f Historique des résultats"),
         dcc.Graph(figure=go.Figure([
-            go.Bar(name="Victoires", x=resultats_df["Journ\u00e9e"],
-                   y=[1 if r == "Victoire" else 0 for r in resultats_df["R\u00e9sultat"]], marker_color="green"),
-            go.Bar(name="\u00c9galit\u00e9s", x=resultats_df["Journ\u00e9e"],
-                   y=[1 if r == "\u00c9galit\u00e9" else 0 for r in resultats_df["R\u00e9sultat"]], marker_color="orange"),
-            go.Bar(name="D\u00e9faites", x=resultats_df["Journ\u00e9e"],
-                   y=[1 if r == "D\u00e9faite" else 0 for r in resultats_df["R\u00e9sultat"]], marker_color="red"),
-        ]).update_layout(barmode="stack", title="Historique des r\u00e9sultats"))
+            go.Bar(
+                name="Victoires", 
+                x=resultats_df["Journée"], 
+                y=resultats_df.groupby("Journée")["Victoire"].sum(),
+                marker_color="green"
+            ),
+            go.Bar(
+                name="Égalités", 
+                x=resultats_df["Journée"], 
+                y=resultats_df.groupby("Journée")["Egalite"].sum(),
+                marker_color="orange"
+            ),
+            go.Bar(
+                name="Défaites", 
+                x=resultats_df["Journée"], 
+                y=resultats_df.groupby("Journée")["Defaite"].sum(),
+                marker_color="red"
+            ),
+        ]).update_layout(
+            barmode="stack", 
+            title="Historique des résultats",
+            xaxis_title="Journée",
+            yaxis_title="Nombre de Résultats",
+            template="plotly_white"
+        ))
     ]),
 
     "Performances": html.Div([
         html.H2("\ud83d\udcc8 \u00c9volution des performances"),
-        dcc.Graph(figure=px.line(
-            performances_df,
-            x="Journ\u00e9e",
-            y=["Buts Marqu\u00e9s", "Buts Encaiss\u00e9s", "Clean Sheets"],
-            markers=True,
-            title="\u00c9volution des performances"
+        dcc.Graph(figure=go.Figure([
+            go.Scatter(
+                x=performances_df["Journée"],
+                y=performances_df["Buts Marqués"],
+                mode="lines+markers",
+                name="Buts Marqués",
+                line=dict(color="blue", width=2)
+            ),
+            go.Scatter(
+                x=performances_df["Journée"],
+                y=performances_df["Buts Encaissés"],
+                mode="lines+markers",
+                name="Buts Encaissés",
+                line=dict(color="red", width=2)
+            ),
+            go.Scatter(
+                x=performances_df["Journée"],
+                y=performances_df["Clean Sheets"],
+                mode="lines+markers",
+                name="Clean Sheets",
+                line=dict(color="green", width=2),
+                yaxis="y2"  # Utilisation de l'axe Y secondaire
+            ),
+        ]).update_layout(
+            title="Évolution des performances",
+            xaxis_title="Journée",
+            yaxis_title="Nombre de Buts",
+            yaxis2=dict(
+                title="Clean Sheets",
+                overlaying="y",  # L'axe Y2 va se superposer à Y
+                side="right",    # Positionner l'axe Y2 à droite
+                showgrid=False   # Masquer les lignes de la grille de l'axe Y2
+            ),
+            template="plotly_white"
         ))
     ])
 }
 
-# Barre de navigation styl\u00e9e
+# Barre de navigation stylée
 navbar = dbc.Navbar(
     dbc.Container([
         html.A(
@@ -70,7 +117,7 @@ navbar = dbc.Navbar(
             [
                 dbc.NavLink("Accueil", href="/", id="Accueil-link", active="exact"),
                 dbc.NavLink("Heatmap", href="/heatmap", id="Heatmap-link", active="exact"),
-                dbc.NavLink("R\u00e9sultats", href="/resultats", id="R\u00e9sultats-link", active="exact"),
+                dbc.NavLink("Résultats", href="/resultats", id="Résultats-link", active="exact"),
                 dbc.NavLink("Performances", href="/performances", id="Performances-link", active="exact"),
             ],
             className="ml-auto",
@@ -97,11 +144,10 @@ def display_page(pathname):
     if pathname == "/heatmap":
         return pages["Heatmap"]
     elif pathname == "/resultats":
-        return pages["R\u00e9sultats"]
+        return pages["Résultats"]
     elif pathname == "/performances":
         return pages["Performances"]
     return pages["Accueil"]
 
-# Remplacement de `run_server()` par `run()`
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8050)
+    app.run_server(host="0.0.0.0", port=8050, debug=True)
