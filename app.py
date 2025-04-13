@@ -3,7 +3,7 @@ from dash import dcc, html
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-import os  # N'oublie pas d'importer os
+import os
 
 # Initialisation de l'application Dash
 app = dash.Dash(__name__)
@@ -16,20 +16,7 @@ df = pd.DataFrame({
 })
 fig = px.line(df, x="x", y="y")
 
-# Mise en page de l'application
-app.layout = html.Div([
-    html.H1("Exemple de graphique"),
-    dcc.Graph(figure=fig)
-])
-
-# Démarrer l'application avec la configuration du port de Render
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8050))  # Utiliser le port spécifié par Render (ou 8050 par défaut)
-    app.run(host='0.0.0.0', port=port, debug=False)  # Utiliser app.run à la place de app.run_server
-
-
-
-### 🔵 1. HEATMAP DES BUTS ###
+# 🔵 1. HEATMAP DES BUTS
 df_heatmap = pd.read_excel("Tesst_But.xlsx")
 df_pivot = df_heatmap.pivot(index="Joueur", columns="Match", values="Buts").fillna(0)
 
@@ -42,7 +29,7 @@ fig_heatmap = px.imshow(
 )
 fig_heatmap.update_layout(title="Heatmap des buts par match", dragmode=False)
 
-### 🔴 2. HISTORIQUE RÉSULTATS ###
+# 🔴 2. HISTORIQUE RÉSULTATS
 df_resultats = pd.read_excel("graphe3_data.xlsx")
 match_dates = df_resultats["Journée"].tolist()
 resultats = df_resultats["Résultat"].tolist()
@@ -86,7 +73,7 @@ fig_resultats.update_layout(
     height=500
 )
 
-### 🟢 3. ÉVOLUTION DE PERFORMANCE ###
+# 🟢 3. ÉVOLUTION DE PERFORMANCE
 df_perf = pd.read_excel("graphe4.xlsx")
 df_perf.columns = df_perf.columns.str.strip()
 
@@ -95,7 +82,7 @@ fig_perf = px.line(df_perf, x="Journée", y=["Buts Marqués", "Buts Encaissés",
                    labels={"value": "Nombre", "variable": "Statistiques"},
                    markers=True)
 
-### 🌐 LAYOUT DE L'APP ###
+# 🌐 LAYOUT DE L'APP
 app.layout = html.Div([
     html.H1("Visualisation de la Ligue 1 du Québec - AS Laval M", style={"textAlign": "center"}),
 
@@ -115,5 +102,7 @@ app.layout = html.Div([
     ])
 ])
 
+# Démarrer l'application avec la configuration du port de Render
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 8050))  # Utiliser le port spécifié par Render (ou 8050 par défaut)
+    app.run(host='0.0.0.0', port=port, debug=False)
