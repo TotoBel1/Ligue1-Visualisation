@@ -3,9 +3,30 @@ from dash import dcc, html
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import os  # N'oublie pas d'importer os
 
+# Initialisation de l'application Dash
 app = dash.Dash(__name__)
 server = app.server  # Nécessaire pour Render
+
+# Exemple de graphique (ajuste-le à ton projet)
+df = pd.DataFrame({
+    "x": [1, 2, 3],
+    "y": [4, 5, 6]
+})
+fig = px.line(df, x="x", y="y")
+
+# Mise en page de l'application
+app.layout = html.Div([
+    html.H1("Exemple de graphique"),
+    dcc.Graph(figure=fig)
+])
+
+# Démarrer l'application avec la configuration du port de Render
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 8050))  # Utiliser le port spécifié par Render (ou 8050 par défaut)
+    app.run_server(host='0.0.0.0', port=port, debug=False)  # Utilise run_server sur Dash > 2.0
+
 
 ### 🔵 1. HEATMAP DES BUTS ###
 df_heatmap = pd.read_excel("Tesst_But.xlsx")
