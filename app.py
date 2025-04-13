@@ -25,7 +25,8 @@ app.layout = html.Div([
 # Démarrer l'application avec la configuration du port de Render
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8050))  # Utiliser le port spécifié par Render (ou 8050 par défaut)
-    app.run_server(host='0.0.0.0', port=port, debug=False)  # Utilise run_server sur Dash > 2.0
+    app.run(host='0.0.0.0', port=port, debug=False)  # Utiliser app.run à la place de app.run_server
+
 
 
 ### 🔵 1. HEATMAP DES BUTS ###
