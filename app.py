@@ -36,7 +36,7 @@ pages = {
 
         html.Img(
             src="/assets/fclaval_champions.jpeg",
-            style={"display": "block", "margin": "auto", "width": "50%", "borderRadius": "10px", "marginBottom": "20px"}
+            style={"display": "block", "margin": "auto", "width": "25%", "borderRadius": "10px", "marginBottom": "20px"}
         ),
 
         html.P(
