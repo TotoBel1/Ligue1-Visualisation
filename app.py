@@ -79,7 +79,7 @@ pages = {
             style={"textAlign": "justify", "margin": "10px 15%", "fontSize": "16px"}
         ),
         html.P(
-            "Une répartition homogène des contributions ou la présence de pics peuvent fournir des indices sur les schémas tactiques de l'équipe.",
+            "Ceci est juste un exemple des joueurs principaux(joueurs clés) de FC laval, on essayera de mettre les données de tout les autres joueurs à la remise finale",
             style={"textAlign": "justify", "margin": "10px 15%", "fontSize": "16px"}
         )
     ]),
