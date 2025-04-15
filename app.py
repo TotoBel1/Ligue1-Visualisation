@@ -35,7 +35,7 @@ pages = {
         html.H3("🏆 FC Laval - Champions de la Ligue1 Québec 2024", style={"textAlign": "center"}),
 
         html.Img(
-            src="C:\Users\mr\Desktop\ligue1-visualisation/fclaval_champions.jpeg",
+            src="/assets/fclaval_champions.jpeg",
             style={"display": "block", "margin": "auto", "width": "60%", "borderRadius": "10px", "marginBottom": "20px"}
         ),
 
