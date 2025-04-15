@@ -35,7 +35,7 @@ pages = {
         html.H3("🏆 FC Laval - Champions de la Ligue1 Québec 2024", style={"textAlign": "center"}),
 
         html.Img(
-            src="https://ligue1quebec.ca/wp-content/uploads/2023/08/fclaval_champions.jpeg",
+            src="C:\Users\mr\Desktop\ligue1-visualisation/fclaval_champions.jpeg",
             style={"display": "block", "margin": "auto", "width": "60%", "borderRadius": "10px", "marginBottom": "20px"}
         ),
 
@@ -132,13 +132,13 @@ pages = {
 
         html.Hr(),
         html.P(
-            "Ce graphique réunit les indicateurs de performance clés : buts marqués, encaissés, clean sheets, et différence de buts.",
+            "Ce graphique réunit les indicateurs de performance clés : buts marqués, encaissés, clean sheets, et différence de buts.", 
             style={"textAlign": "justify", "margin": "0 10%"}
         ),
         html.P(
-            "Il permet d’analyser le rapport attaque/défense, la stabilité défensive, et la tendance des performances.",
+            "Il permet d’analyser le rapport attaque/défense, la stabilité défensive, et la tendance des performances.Une différence de buts positive et croissante indique une équipe bien en place et en confiance",
             style={"textAlign": "justify", "margin": "0 10%"}
-        )
+        ),
     ])
 }
 
