@@ -28,7 +28,7 @@ if "Buts Marqués" in resultats_df.columns and "Buts Encaissés" in resultats_df
 # Pages du dashboard
 pages = {
     "Accueil": html.Div([
-        html.H2("Bienvenue sur le tableau de bord de l'équipe AS Laval M !", style={"textAlign": "center"}),
+        html.H2("Bienvenue sur le tableau de bord de l'équipe FS Laval M !", style={"textAlign": "center"}),
         html.P("Utilisez le menu ci-dessus pour explorer les statistiques.", style={"textAlign": "center"}),
 
         html.Hr(),
@@ -36,7 +36,7 @@ pages = {
 
         html.Img(
             src="/assets/fclaval_champions.jpeg",
-            style={"display": "block", "margin": "auto", "width": "60%", "borderRadius": "10px", "marginBottom": "20px"}
+            style={"display": "block", "margin": "auto", "width": "50%", "borderRadius": "10px", "marginBottom": "20px"}
         ),
 
         html.P(
