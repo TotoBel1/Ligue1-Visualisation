@@ -42,7 +42,7 @@ pages = {
         html.P(
             "Le FC Laval a remporté le championnat masculin de la Ligue1 Québec pour la deuxième fois de sa jeune histoire. "
             "Les Lavallois ont confirmé ce titre en août 2024, à la suite d’une victoire 1-0 contre le CS Mont-Royal Outremont. "
-            "Grâce à une fiche impressionnante de 12 victoires, 3 nuls et seulement 3 défaites, le club a dominé la saison. "
+            "Grâce à une fiche impressionnante de 12 victoires, 3 nuls et seulement 9 défaites, le club a dominé la saison. "
             "Ce tableau de bord permet de revivre et analyser cette saison exceptionnelle à travers plusieurs indicateurs de performance.",
             style={"textAlign": "justify", "margin": "0 10%"}
         )
