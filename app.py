@@ -25,39 +25,78 @@ if "Buts Marqués" in performances_df.columns and "Buts Encaissés" in performan
 if "Buts Marqués" in resultats_df.columns and "Buts Encaissés" in resultats_df.columns:
     resultats_df["Diff_Buts"] = resultats_df["Buts Marqués"] - resultats_df["Buts Encaissés"]
 
-# Fonctions de figures protégées
+# Pages du dashboard
+pages = {
+    "Accueil": html.Div([
+        html.H2("Bienvenue sur le tableau de bord de l'équipe FC Laval M !", style={"textAlign": "center"}),
+        html.P("Ce tableau de bord interactif vous permet d’explorer les performances de l’équipe FC Laval M durant la saison 2024.", style={"textAlign": "center"}),
+        html.Hr(),
+        html.H3("🏆 FC Laval - Champions de la Ligue1 Québec 2024", style={"textAlign": "center"}),
 
-def get_heatmap_fig():
-    try:
-        return px.imshow(
+        html.Img(
+            src="/assets/fclaval_champions.jpeg",
+            style={"display": "block", "margin": "auto", "width": "25%", "borderRadius": "10px", "marginBottom": "20px"}
+        ),
+
+        html.P(
+            "Le FC Laval a remporté le championnat masculin de la Ligue1 Québec pour la deuxième fois de sa jeune histoire.\n"
+            "Les Lavallois ont confirmé ce titre en août 2024, à la suite d’une victoire 1-0 contre le CS Mont-Royal Outremont.\n"
+            "Grâce à une fiche impressionnante de 12 victoires, 3 nuls et seulement 9 défaites, le club a dominé la saison.\n"
+            "Ce tableau de bord permet de revivre et analyser cette saison exceptionnelle à travers plusieurs indicateurs de performance.",
+            style={"textAlign": "justify", "margin": "0 10%"}
+        )
+    ]),
+
+    "Heatmap": html.Div([
+        html.H2("📊 Heatmap des buts par match", style={"textAlign": "center"}),
+
+        html.P("Ce graphique présente une heatmap du nombre de buts marqués par chaque joueur lors de chaque match de la saison.", style={"textAlign": "center"}),
+
+        dcc.Graph(figure=px.imshow(
             heatmap_df.pivot(index="Joueur", columns="Match", values="Buts").fillna(0),
             labels=dict(x="Match", y="Joueur", color="Buts marqués"),
             color_continuous_scale="Blues"
-        )
-    except Exception as e:
-        fig = go.Figure()
-        fig.add_annotation(text=f"Erreur: {e}", showarrow=False, x=0.5, y=0.5)
-        return fig
+        )),
 
-def get_resultats_fig():
-    try:
-        return go.Figure([
+        html.Img(
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/FC_Laval_logo_2023.svg/1200px-FC_Laval_logo_2023.svg.png",
+            style={
+                "width": "200px",
+                "display": "block",
+                "margin": "20px auto",
+                "borderRadius": "10px",
+                "boxShadow": "0 4px 8px rgba(0,0,0,0.2)"
+            }
+        ),
+
+        html.P("Elle permet d’identifier rapidement les joueurs clés en attaque, et les périodes de forme ou de titularisation.", style={"textAlign": "justify", "margin": "10px 15%"})
+    ]),
+
+    "Résultats": html.Div([
+        html.H2("🕵️‍♂️ Historique des résultats", style={"textAlign": "center"}),
+
+        html.P("Ce graphique montre la dynamique des résultats (victoires, égalités, défaites) par journée de match.", style={"textAlign": "center"}),
+
+        dcc.Graph(figure=go.Figure([
             go.Bar(name="Victoires", x=resultats_df["Journée"],
-                   y=[int(s.split("-")[0]) > int(s.split("-")[1]) for s in resultats_df["Score"]], marker_color="green"),
+                   y=[int(s.split("-")[0]) > int(s.split("-")[1]) for s in resultats_df["Score"]],
+                   marker_color="green"),
             go.Bar(name="Égalités", x=resultats_df["Journée"],
-                   y=[int(s.split("-")[0]) == int(s.split("-")[1]) for s in resultats_df["Score"]], marker_color="orange"),
+                   y=[int(s.split("-")[0]) == int(s.split("-")[1]) for s in resultats_df["Score"]],
+                   marker_color="orange"),
             go.Bar(name="Défaites", x=resultats_df["Journée"],
-                   y=[int(s.split("-")[0]) < int(s.split("-")[1]) for s in resultats_df["Score"]], marker_color="red"),
+                   y=[int(s.split("-")[0]) < int(s.split("-")[1]) for s in resultats_df["Score"]],
+                   marker_color="red"),
         ]).update_layout(barmode="stack", title="Résultats de l'équipe par journée",
-                         xaxis_title="Journée", yaxis_title="Résultat (1=True, 0=False)")
-    except Exception as e:
-        fig = go.Figure()
-        fig.add_annotation(text=f"Erreur: {e}", showarrow=False, x=0.5, y=0.5)
-        return fig
+                         xaxis_title="Journée", yaxis_title="Résultat (1=True, 0=False)"))
+    ]),
 
-def get_performances_fig():
-    try:
-        return go.Figure([
+    "Performances": html.Div([
+        html.H2("📈 Évolution des performances", style={"textAlign": "center"}),
+
+        html.P("Ce graphique illustre l'évolution des performances de l'équipe au fil des journées : buts marqués, encaissés, clean sheets et différence de buts.", style={"textAlign": "center"}),
+
+        dcc.Graph(figure=go.Figure([
             go.Scatter(x=performances_df["Journée"], y=performances_df["Buts Marqués"],
                        mode="lines+markers", name="Buts Marqués", line=dict(color="green")),
             go.Scatter(x=performances_df["Journée"], y=performances_df["Buts Encaissés"],
@@ -66,49 +105,13 @@ def get_performances_fig():
                        mode="lines+markers", name="Clean Sheets", line=dict(color="blue", dash="dot")),
             go.Scatter(x=performances_df["Journée"], y=performances_df["Diff_Buts"],
                        mode="lines+markers", name="Différence de Buts", line=dict(color="purple", dash="dash"))
-        ]).update_layout(title="Évolution des performances",
-                         xaxis_title="Journée", yaxis_title="Nombre", legend_title="Indicateurs")
-    except Exception as e:
-        fig = go.Figure()
-        fig.add_annotation(text=f"Erreur: {e}", showarrow=False, x=0.5, y=0.5)
-        return fig
-
-# Pages
-pages = {
-    "Accueil": dbc.Card([
-        dbc.CardHeader(html.H2("Bienvenue sur le tableau de bord de l'équipe FC Laval M !", className="text-center")),
-        dbc.CardBody([
-            html.P("Utilisez le menu ci-dessus pour explorer les statistiques.", className="text-center"),
-            html.Hr(),
-            html.H3("\ud83c\udfc6 FC Laval - Champions de la Ligue1 Québec 2024", className="text-center"),
-            html.Img(src="/assets/fclaval_champions.jpeg", style={"display": "block", "margin": "auto", "width": "25%", "borderRadius": "10px"}),
-            html.P("Le FC Laval a remporté...", style={"textAlign": "justify", "margin": "0 10%"})
-        ])
-    ], className="mb-4 shadow-sm rounded"),
-
-    "Heatmap": dbc.Card([
-        dbc.CardHeader(html.H2("\ud83d\udcca Heatmap des buts par match", className="text-center")),
-        dbc.CardBody([
-            dcc.Graph(figure=get_heatmap_fig()),
-            html.P("Cette heatmap montre le nombre de buts...", style={"textAlign": "justify", "margin": "0 10%"}),
-        ])
-    ], className="mb-4 shadow-sm rounded"),
-
-    "Résultats": dbc.Card([
-        dbc.CardHeader(html.H2("\ud83d\udd75\ufe0f\u200d Historique des résultats", className="text-center")),
-        dbc.CardBody([
-            dcc.Graph(figure=get_resultats_fig()),
-            html.P("Ce graphique montre les résultats par match...", style={"textAlign": "justify", "margin": "0 10%"})
-        ])
-    ], className="mb-4 shadow-sm rounded"),
-
-    "Performances": dbc.Card([
-        dbc.CardHeader(html.H2("\ud83d\udcc8 Évolution des performances", className="text-center")),
-        dbc.CardBody([
-            dcc.Graph(figure=get_performances_fig()),
-            html.P("Ce graphique montre l’évolution...", style={"textAlign": "justify", "margin": "0 10%"})
-        ])
-    ], className="mb-4 shadow-sm rounded")
+        ]).update_layout(
+            title="Évolution des performances par journée",
+            xaxis_title="Journée",
+            yaxis_title="Nombre",
+            legend_title="Indicateurs"
+        ))
+    ])
 }
 
 # Barre de navigation
@@ -118,7 +121,7 @@ navbar = dbc.Navbar(
             dbc.Row([
                 dbc.Col(html.Img(src="https://img.icons8.com/color/48/combo-chart--v1.png", height="30px")),
                 dbc.Col(html.Div("AS Laval M - Tableau de Bord", className="navbar-title")),
-            ], align="center"),
+            ], align="center", className="g-2"),
             href="/",
             style={"textDecoration": "none"},
         ),
@@ -138,12 +141,10 @@ navbar = dbc.Navbar(
 app.layout = html.Div([
     dcc.Location(id="url"),
     navbar,
-    dbc.Container(id="page-content", style={"paddingTop": "20px"}, fluid=False),
-    html.Footer("Projet réalisé par Ton Nom - M.Sc.A Génie Info - Polytechnique Montréal", 
-                style={"textAlign": "center", "padding": "20px", "fontSize": "14px", "color": "#888"})
+    html.Div(id="page-content", style={"padding": "20px", "marginLeft": "5%", "marginRight": "5%"})
 ])
 
-# Routing callback
+# Callback de routage
 @callback(
     Output("page-content", "children"),
     [Input("url", "pathname")]
