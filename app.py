@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, callback, Output, Input
+from dash import html, dcc, Input, Output, callback
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
@@ -14,142 +14,122 @@ heatmap_df = pd.read_excel("Tesst_But.xlsx")
 resultats_df = pd.read_excel("graphe3_data.xlsx")
 performances_df = pd.read_excel("graphe4.xlsx")
 
-# Nettoyage des colonnes
-resultats_df.columns = resultats_df.columns.str.replace(r"\s+", " ", regex=True).str.strip()
-performances_df.columns = performances_df.columns.str.replace(r"\s+", " ", regex=True).str.strip()
-
-# Ajout de la colonne Différence de buts
+# Nettoyage
+resultats_df.columns = resultats_df.columns.str.strip()
+performances_df.columns = performances_df.columns.str.strip()
 if "Buts Marqués" in performances_df.columns and "Buts Encaissés" in performances_df.columns:
     performances_df["Diff_Buts"] = performances_df["Buts Marqués"] - performances_df["Buts Encaissés"]
 
-if "Buts Marqués" in resultats_df.columns and "Buts Encaissés" in resultats_df.columns:
-    resultats_df["Diff_Buts"] = resultats_df["Buts Marqués"] - resultats_df["Buts Encaissés"]
+# KPI Résumé
+def get_kpi_cards():
+    total_buts = performances_df["Buts Marqués"].sum()
+    clean_sheets = performances_df["Clean Sheets"].sum()
+    victoires = sum(int(s.split("-")[0]) > int(s.split("-")[1]) for s in resultats_df["Score"])
 
-# Pages du dashboard
+    return dbc.Row([
+        dbc.Col(dbc.Card([dbc.CardBody([html.H5("⚽ Total Buts", className="card-title"),
+                                         html.H2(total_buts, className="card-text")])]), md=4),
+        dbc.Col(dbc.Card([dbc.CardBody([html.H5("🧤 Clean Sheets", className="card-title"),
+                                         html.H2(clean_sheets, className="card-text")])]), md=4),
+        dbc.Col(dbc.Card([dbc.CardBody([html.H5("✅ Victoires", className="card-title"),
+                                         html.H2(victoires, className="card-text")])]), md=4),
+    ], className="mb-4")
+
+# Graphes avec filtres et annotations
+def get_heatmap_fig(joueur=None):
+    df = heatmap_df.copy()
+    if joueur:
+        df = df[df["Joueur"] == joueur]
+    pivot = df.pivot(index="Joueur", columns="Match", values="Buts").fillna(0)
+    fig = px.imshow(pivot, labels={"color": "Buts marqués"}, color_continuous_scale="Blues")
+    fig.update_layout(title="Heatmap des buts par joueur", margin=dict(l=20, r=20, t=60, b=20))
+    return fig
+
+def get_resultats_fig():
+    res = resultats_df.copy()
+    victoires = [int(s.split("-")[0]) > int(s.split("-")[1]) for s in res["Score"]]
+    egalites = [int(s.split("-")[0]) == int(s.split("-")[1]) for s in res["Score"]]
+    defaites = [int(s.split("-")[0]) < int(s.split("-")[1]) for s in res["Score"]]
+    fig = go.Figure([
+        go.Bar(name="Victoires", x=res["Journée"], y=victoires, marker_color="green"),
+        go.Bar(name="Égalités", x=res["Journée"], y=egalites, marker_color="orange"),
+        go.Bar(name="Défaites", x=res["Journée"], y=defaites, marker_color="red"),
+    ])
+    fig.update_layout(barmode="stack", title="Historique des résultats", 
+                      xaxis_title="Journée", yaxis_title="Résultat", 
+                      margin=dict(l=20, r=20, t=60, b=20),
+                      annotations=[
+                          dict(x=10, y=1, text="Série de victoires ici", showarrow=True, arrowhead=1)
+                      ])
+    return fig
+
+def get_performances_fig():
+    df = performances_df.copy()
+    fig = go.Figure([
+        go.Scatter(x=df["Journée"], y=df["Buts Marqués"], mode="lines+markers", name="Buts Marqués", line=dict(color="green")),
+        go.Scatter(x=df["Journée"], y=df["Buts Encaissés"], mode="lines+markers", name="Buts Encaissés", line=dict(color="red")),
+        go.Scatter(x=df["Journée"], y=df["Clean Sheets"], mode="lines+markers", name="Clean Sheets", line=dict(color="blue", dash="dot")),
+        go.Scatter(x=df["Journée"], y=df["Diff_Buts"], mode="lines+markers", name="Différence", line=dict(color="purple", dash="dash"))
+    ])
+    fig.update_layout(title="Évolution des performances", xaxis_title="Journée", yaxis_title="Valeurs",
+                      margin=dict(l=20, r=20, t=60, b=20))
+    return fig
+
+# Mise en page des pages
 pages = {
     "Accueil": html.Div([
-        html.H2("Bienvenue sur le tableau de bord de l'équipe FC Laval M !", style={"textAlign": "center"}),
-        html.P("Ce tableau de bord interactif vous permet d’explorer les performances de l’équipe FC Laval M durant la saison 2024.", style={"textAlign": "center"}),
+        html.H2("Bienvenue sur le Dashboard de l'équipe FC Laval M", className="text-center"),
+        html.P("Ce tableau de bord vous permet d'explorer les statistiques clés de l'équipe.", className="text-center"),
+        html.Img(src="/assets/fclaval_champions.jpeg", style={"width": "25%", "margin": "auto", "display": "block", "borderRadius": "10px"}),
         html.Hr(),
-        html.H3("🏆 FC Laval - Champions de la Ligue1 Québec 2024", style={"textAlign": "center"}),
-
-        html.Img(
-            src="/assets/fclaval_champions.jpeg",
-            style={"display": "block", "margin": "auto", "width": "25%", "borderRadius": "10px", "marginBottom": "20px"}
-        ),
-
-        html.P(
-            "Le FC Laval a remporté le championnat masculin de la Ligue1 Québec pour la deuxième fois de sa jeune histoire.\n"
-            "Les Lavallois ont confirmé ce titre en août 2024, à la suite d’une victoire 1-0 contre le CS Mont-Royal Outremont.\n"
-            "Grâce à une fiche impressionnante de 12 victoires, 3 nuls et seulement 9 défaites, le club a dominé la saison.\n"
-            "Ce tableau de bord permet de revivre et analyser cette saison exceptionnelle à travers plusieurs indicateurs de performance.",
-            style={"textAlign": "justify", "margin": "0 10%"}
-        )
+        get_kpi_cards()
     ]),
 
     "Heatmap": html.Div([
-        html.H2("📊 Heatmap des buts par match", style={"textAlign": "center"}),
-
-        html.P("Ce graphique présente une heatmap du nombre de buts marqués par chaque joueur lors de chaque match de la saison.", style={"textAlign": "center"}),
-
-        dcc.Graph(figure=px.imshow(
-            heatmap_df.pivot(index="Joueur", columns="Match", values="Buts").fillna(0),
-            labels=dict(x="Match", y="Joueur", color="Buts marqués"),
-            color_continuous_scale="Blues"
-        )),
-
-        html.Img(
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/FC_Laval_logo_2023.svg/1200px-FC_Laval_logo_2023.svg.png",
-            style={
-                "width": "200px",
-                "display": "block",
-                "margin": "20px auto",
-                "borderRadius": "10px",
-                "boxShadow": "0 4px 8px rgba(0,0,0,0.2)"
-            }
+        html.H4("Filtrer par joueur :"),
+        dcc.Dropdown(
+            options=[{"label": j, "value": j} for j in sorted(heatmap_df["Joueur"].unique())],
+            id="joueur-dropdown", placeholder="Choisir un joueur"
         ),
-
-        html.P("Elle permet d’identifier rapidement les joueurs clés en attaque, et les périodes de forme ou de titularisation.", style={"textAlign": "justify", "margin": "10px 15%"})
+        dcc.Graph(id="heatmap-graph"),
+        html.P("Cette heatmap montre les performances individuelles des joueurs par match.", className="mt-2")
     ]),
 
     "Résultats": html.Div([
-        html.H2("🕵️‍♂️ Historique des résultats", style={"textAlign": "center"}),
-
-        html.P("Ce graphique montre la dynamique des résultats (victoires, égalités, défaites) par journée de match.", style={"textAlign": "center"}),
-
-        dcc.Graph(figure=go.Figure([
-            go.Bar(name="Victoires", x=resultats_df["Journée"],
-                   y=[int(s.split("-")[0]) > int(s.split("-")[1]) for s in resultats_df["Score"]],
-                   marker_color="green"),
-            go.Bar(name="Égalités", x=resultats_df["Journée"],
-                   y=[int(s.split("-")[0]) == int(s.split("-")[1]) for s in resultats_df["Score"]],
-                   marker_color="orange"),
-            go.Bar(name="Défaites", x=resultats_df["Journée"],
-                   y=[int(s.split("-")[0]) < int(s.split("-")[1]) for s in resultats_df["Score"]],
-                   marker_color="red"),
-        ]).update_layout(barmode="stack", title="Résultats de l'équipe par journée",
-                         xaxis_title="Journée", yaxis_title="Résultat (1=True, 0=False)"))
+        dcc.Graph(figure=get_resultats_fig()),
+        html.P("Analyse de l'évolution des résultats par journée.", className="mt-2")
     ]),
 
     "Performances": html.Div([
-        html.H2("📈 Évolution des performances", style={"textAlign": "center"}),
-
-        html.P("Ce graphique illustre l'évolution des performances de l'équipe au fil des journées : buts marqués, encaissés, clean sheets et différence de buts.", style={"textAlign": "center"}),
-
-        dcc.Graph(figure=go.Figure([
-            go.Scatter(x=performances_df["Journée"], y=performances_df["Buts Marqués"],
-                       mode="lines+markers", name="Buts Marqués", line=dict(color="green")),
-            go.Scatter(x=performances_df["Journée"], y=performances_df["Buts Encaissés"],
-                       mode="lines+markers", name="Buts Encaissés", line=dict(color="red")),
-            go.Scatter(x=performances_df["Journée"], y=performances_df["Clean Sheets"],
-                       mode="lines+markers", name="Clean Sheets", line=dict(color="blue", dash="dot")),
-            go.Scatter(x=performances_df["Journée"], y=performances_df["Diff_Buts"],
-                       mode="lines+markers", name="Différence de Buts", line=dict(color="purple", dash="dash"))
-        ]).update_layout(
-            title="Évolution des performances par journée",
-            xaxis_title="Journée",
-            yaxis_title="Nombre",
-            legend_title="Indicateurs"
-        ))
+        dcc.Graph(figure=get_performances_fig()),
+        html.P("Vue d'ensemble des performances offensives et défensives de l'équipe.", className="mt-2")
     ])
 }
 
-# Barre de navigation
-navbar = dbc.Navbar(
-    dbc.Container([
-        html.A(
-            dbc.Row([
-                dbc.Col(html.Img(src="https://img.icons8.com/color/48/combo-chart--v1.png", height="30px")),
-                dbc.Col(html.Div("AS Laval M - Tableau de Bord", className="navbar-title")),
-            ], align="center", className="g-2"),
-            href="/",
-            style={"textDecoration": "none"},
-        ),
-        dbc.Nav([
-            dbc.NavLink("Accueil", href="/", id="Accueil-link", active="exact"),
-            dbc.NavLink("Heatmap", href="/heatmap", id="Heatmap-link", active="exact"),
-            dbc.NavLink("Résultats", href="/resultats", id="Résultats-link", active="exact"),
-            dbc.NavLink("Performances", href="/performances", id="Performances-link", active="exact"),
-        ], className="ml-auto", navbar=True)
-    ]),
+# Navbar
+navbar = dbc.NavbarSimple(
+    brand="AS Laval M - Tableau de Bord",
+    brand_href="/",
     color="light",
     dark=False,
-    className="shadow-sm mb-4"
+    children=[
+        dbc.NavItem(dbc.NavLink("Accueil", href="/")),
+        dbc.NavItem(dbc.NavLink("Heatmap", href="/heatmap")),
+        dbc.NavItem(dbc.NavLink("Résultats", href="/resultats")),
+        dbc.NavItem(dbc.NavLink("Performances", href="/performances")),
+    ]
 )
 
-# Layout principal
+# Layout
 app.layout = html.Div([
     dcc.Location(id="url"),
     navbar,
-    html.Div(id="page-content", style={"padding": "20px", "marginLeft": "5%", "marginRight": "5%"})
+    dbc.Container(id="page-content", style={"paddingTop": "30px"})
 ])
 
-# Callback de routage
-@callback(
-    Output("page-content", "children"),
-    [Input("url", "pathname")]
-)
-def display_page(pathname):
+# Callback routing
+@callback(Output("page-content", "children"), Input("url", "pathname"))
+def render_page(pathname):
     if pathname == "/heatmap":
         return pages["Heatmap"]
     elif pathname == "/resultats":
@@ -158,5 +138,13 @@ def display_page(pathname):
         return pages["Performances"]
     return pages["Accueil"]
 
+# Callback pour heatmap dynamique
+@callback(
+    Output("heatmap-graph", "figure"),
+    Input("joueur-dropdown", "value")
+)
+def update_heatmap(joueur):
+    return get_heatmap_fig(joueur)
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8000)
+    app.run(debug=True, port=8000)
