@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, Input, Output
+from dash import html, dcc, Input, Output, callback
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
@@ -32,43 +32,54 @@ def get_heatmap_fig(joueur=None):
 
 def get_resultats_fig():
     res = resultats_df.copy()
-    victoires = [int(s.split("-")[0]) > int(s.split("-")[1]) for s in res["Score"]]
-    egalites = [int(s.split("-")[0]) == int(s.split("-")[1]) for s in res["Score"]]
-    defaites = [int(s.split("-")[0]) < int(s.split("-")[1]) for s in res["Score"]]
+    victoires = [1 if int(s.split("-")[0]) > int(s.split("-")[1]) else 0 for s in res["Score"]]
+    egalites = [1 if int(s.split("-")[0]) == int(s.split("-")[1]) else 0 for s in res["Score"]]
+    defaites = [1 if int(s.split("-")[0]) < int(s.split("-")[1]) else 0 for s in res["Score"]]
 
-    fig = go.Figure([
-        go.Bar(name="Victoires", x=res["Journée"], y=victoires, marker_color="green"),
-        go.Bar(name="Égalités", x=res["Journée"], y=egalites, marker_color="yellow"),
-        go.Bar(name="Défaites", x=res["Journée"], y=defaites, marker_color="red"),
-    ])
-    
-    # Ajustement de l'axe Y pour éviter les décimales et n'afficher que des entiers
+    fig = go.Figure()
+    fig.add_trace(go.Bar(name="Victoires", x=res["Journée"], y=victoires, marker_color="#28a745",
+                         hovertemplate="Victoire le jour %{x}"))
+    fig.add_trace(go.Bar(name="Égalités", x=res["Journée"], y=egalites, marker_color="#ffc107",
+                         hovertemplate="Égalité le jour %{x}"))
+    fig.add_trace(go.Bar(name="Défaites", x=res["Journée"], y=defaites, marker_color="#dc3545",
+                         hovertemplate="Défaite le jour %{x}"))
+
     fig.update_layout(barmode="stack", title="Historique des résultats",
-                      xaxis_title="Journée", yaxis_title="Matchs",
-                      yaxis=dict(tickmode='array', tickvals=[0, 1, 2, 3]),  # Valeurs entières uniquement
-                      margin=dict(l=20, r=20, t=60, b=20))
+                      xaxis_title="Journée", yaxis_title="Nombre de matchs",
+                      margin=dict(l=20, r=20, t=60, b=20),
+                      template="plotly_white",
+                      legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"))
     return fig
 
 def get_performances_fig():
     df = performances_df.copy()
-    fig = go.Figure([
-        go.Scatter(x=df["Journée"], y=df["Buts Marqués"], mode="lines+markers", name="Buts Marqués", line=dict(color="green")),
-        go.Scatter(x=df["Journée"], y=df["Buts Encaissés"], mode="lines+markers", name="Buts Encaissés", line=dict(color="red")),
-        go.Scatter(x=df["Journée"], y=df["Clean Sheets"], mode="lines+markers", name="Clean Sheets", line=dict(color="blue", dash="dot")),
-        go.Scatter(x=df["Journée"], y=df["Diff_Buts"], mode="lines+markers", name="Différence", line=dict(color="purple", dash="dash"))
-    ])
-    fig.update_layout(title="Évolution des performances", xaxis_title="Journée", yaxis_title="Valeurs",
-                      margin=dict(l=20, r=20, t=60, b=20))
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=df["Journée"], y=df["Buts Marqués"], mode="lines+markers", name="Buts Marqués",
+                             line=dict(color="#28a745", width=3), marker=dict(size=7)))
+    fig.add_trace(go.Scatter(x=df["Journée"], y=df["Buts Encaissés"], mode="lines+markers", name="Buts Encaissés",
+                             line=dict(color="#dc3545", width=3), marker=dict(size=7)))
+    fig.add_trace(go.Scatter(x=df["Journée"], y=df["Clean Sheets"], mode="lines+markers", name="Clean Sheets",
+                             line=dict(color="#007bff", width=3, dash="dot"), marker=dict(size=7)))
+    fig.add_trace(go.Scatter(x=df["Journée"], y=df["Diff_Buts"], mode="lines+markers", name="Différence",
+                             line=dict(color="#6f42c1", width=3, dash="dash"), marker=dict(size=7)))
+
+    max_diff = df["Diff_Buts"].idxmax()
+    fig.add_annotation(x=df["Journée"][max_diff], y=df["Diff_Buts"][max_diff],
+                       text="📈 Meilleure diff. de buts", showarrow=True, arrowhead=1)
+
+    fig.update_layout(title="Évolution des performances",
+                      xaxis_title="Journée", yaxis_title="Valeurs",
+                      margin=dict(l=20, r=20, t=60, b=20),
+                      template="plotly_white",
+                      legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"))
     return fig
 
-# Mise en page des pages
+# Pages
 pages = {
     "Accueil": html.Div([
         html.H2("Bienvenue sur le Dashboard de l'équipe FC Laval M", className="text-center"),
-        html.P("FC Laval a connu une saison exceptionnelle cette année, en accumulant un total impressionnant de victoires. "
-               "L'équipe a su se maintenir au top avec des performances remarquables, que ce soit en attaque ou en défense. "
-               "Nous avons suivi chaque match et analysé les performances pour mieux comprendre l'évolution de l'équipe.",
-               className="text-center"),
+        html.P("Ce tableau de bord vous permet d'explorer les statistiques clés de l'équipe.", className="text-center"),
         html.Img(src="/assets/fclaval_champions.jpeg", style={"width": "25%", "margin": "auto", "display": "block", "borderRadius": "10px"}),
         html.Hr(),
     ]),
@@ -85,53 +96,57 @@ pages = {
 
     "Résultats": html.Div([
         dcc.Graph(figure=get_resultats_fig()),
-        html.P("Analyse de l'évolution des résultats par journée. Les couleurs indiquent les victoires (vert), les égalités (jaune) et les défaites (rouge).", className="mt-2")
+        html.P("Analyse de l'évolution des résultats par journée avec un visuel amélioré.", className="mt-2")
     ]),
 
     "Performances": html.Div([
         dcc.Graph(figure=get_performances_fig()),
-        html.P("Cette graphique montre l'évolution des performances de l'équipe au fil des matchs. "
-               "Les lignes indiquent les buts marqués, les buts encaissés, les clean sheets et la différence de buts.",
-               className="mt-2")
-    ]),
+        html.P("Vue d'ensemble des performances offensives et défensives de l'équipe avec points clés surlignés.", className="mt-2")
+    ])
 }
 
-# Layout principal
+# Navbar
+navbar = dbc.NavbarSimple(
+    brand="AS Laval M - Tableau de Bord",
+    brand_href="/",
+    color="light",
+    dark=False,
+    children=[
+        dbc.NavItem(dbc.NavLink("Accueil", href="/")),
+        dbc.NavItem(dbc.NavLink("Heatmap", href="/heatmap")),
+        dbc.NavItem(dbc.NavLink("Résultats", href="/resultats")),
+        dbc.NavItem(dbc.NavLink("Performances", href="/performances")),
+    ]
+)
+
+# Layout
 app.layout = html.Div([
-    dbc.Navbar(
-        dbc.Container([
-            dbc.NavbarBrand("Dashboard FC Laval M", href="/"),
-            dbc.Nav([
-                dbc.NavItem(dbc.NavLink("Accueil", href="/")),
-                dbc.NavItem(dbc.NavLink("Heatmap", href="/heatmap")),
-                dbc.NavItem(dbc.NavLink("Résultats", href="/resultats")),
-                dbc.NavItem(dbc.NavLink("Performances", href="/performances")),
-            ])
-        ]),
-        color="dark", dark=True
-    ),
-    html.Div(id="page-content")
+    dcc.Location(id="url"),
+    navbar,
+    dbc.Container(id="page-content", style={"paddingTop": "30px"})
 ])
 
-# Navigation
-@app.callback(
-    Output("page-content", "children"),
-    [Input("url", "pathname")]
-)
-def display_page(pathname):
-    if pathname in ["/", "/accueil"]:
-        return pages["Accueil"]
-    elif pathname == "/heatmap":
+# Callback routing
+@callback(Output("page-content", "children"), Input("url", "pathname"))
+def render_page(pathname):
+    if pathname == "/heatmap":
         return pages["Heatmap"]
     elif pathname == "/resultats":
         return pages["Résultats"]
     elif pathname == "/performances":
         return pages["Performances"]
-    else:
-        return "404 Page Not Found"
+    return pages["Accueil"]
+
+# Callback pour heatmap dynamique
+@callback(
+    Output("heatmap-graph", "figure"),
+    Input("joueur-dropdown", "value")
+)
+def update_heatmap(joueur):
+    return get_heatmap_fig(joueur)
 
 import os
-    
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
 
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    app.run(debug=True, host="0.0.0.0", port=port)
