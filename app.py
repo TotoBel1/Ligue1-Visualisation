@@ -3,6 +3,7 @@ from dash import html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
+import os
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "AS Laval M - Dashboard"
