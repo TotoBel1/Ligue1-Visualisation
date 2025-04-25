@@ -77,7 +77,7 @@ def get_performances_fig():
 
 # Pages
 pages = {
-    "Accueil": html.Div([
+    "Accueil": html.Div([  
         html.H2("Bienvenue sur le Dashboard de l'équipe FC Laval M", className="text-center"),
         html.P("Ce tableau de bord vous permet d'explorer les statistiques clés de l'équipe.", className="text-center"),
         
@@ -90,9 +90,7 @@ pages = {
                className="text-center"),
         
         html.Img(src="/assets/fclaval_champions.jpeg", style={"width": "25%", "margin": "auto", "display": "block", "borderRadius": "10px"}),
-        html.Hr(),
-        
-        get_kpi_cards()
+        html.Hr()
     ]),
 
     "Heatmap": html.Div([
