@@ -80,8 +80,19 @@ pages = {
     "Accueil": html.Div([
         html.H2("Bienvenue sur le Dashboard de l'équipe FC Laval M", className="text-center"),
         html.P("Ce tableau de bord vous permet d'explorer les statistiques clés de l'équipe.", className="text-center"),
+        
+        # Description détaillée de FC Laval M
+        html.H3("À propos de l'équipe FC Laval M", className="text-center mt-4"),
+        html.P("L'équipe FC Laval M est une équipe de football passionnée et compétitive évoluant dans les ligues régionales du Québec. "
+               "Connue pour son esprit d'équipe et sa détermination, l'équipe s'efforce de se distinguer par des performances exceptionnelles à chaque match. "
+               "Les joueurs, sous la direction de leur coach expérimenté, allient talent, stratégie et travail acharné pour atteindre leurs objectifs et "
+               "remporter des titres. Chaque match est une occasion de repousser leurs limites et de faire briller les couleurs de leur équipe.", 
+               className="text-center"),
+        
         html.Img(src="/assets/fclaval_champions.jpeg", style={"width": "25%", "margin": "auto", "display": "block", "borderRadius": "10px"}),
         html.Hr(),
+        
+        get_kpi_cards()
     ]),
 
     "Heatmap": html.Div([
