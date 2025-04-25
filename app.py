@@ -1,8 +1,7 @@
 import dash
-from dash import html, dcc, Input, Output, callback
+from dash import html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -10,65 +9,65 @@ app.title = "AS Laval M - Dashboard"
 server = app.server
 
 # Chargement des données
-heatmap_df = pd.read_excel("Tesst_But.xlsx")
 resultats_df = pd.read_excel("graphe3_data.xlsx")
-performances_df = pd.read_excel("graphe4.xlsx")
 
-# Nettoyage
+# Nettoyage des données
 resultats_df.columns = resultats_df.columns.str.strip()
-performances_df.columns = performances_df.columns.str.strip()
-if "Buts Marqués" in performances_df.columns and "Buts Encaissés" in performances_df.columns:
-    performances_df["Diff_Buts"] = performances_df["Buts Marqués"] - performances_df["Buts Encaissés"]
 
-# Graphes avec filtres et annotations
-def get_heatmap_fig(joueur=None):
-    df = heatmap_df.copy()
-    if joueur:
-        df = df[df["Joueur"] == joueur]
-    pivot = df.pivot(index="Joueur", columns="Match", values="Buts").fillna(0)
-    fig = px.imshow(pivot, labels={"color": "Buts marqués"}, color_continuous_scale="Blues")
-    fig.update_layout(title="Heatmap des buts par joueur", margin=dict(l=20, r=20, t=60, b=20))
-    return fig
+# Fonction pour calculer les points de chaque match
+def calculer_points(score):
+    if int(score.split("-")[0]) > int(score.split("-")[1]):
+        return 3, 0, 0  # Victoire = 3 points
+    elif int(score.split("-")[0]) == int(score.split("-")[1]):
+        return 1, 0, 0  # Égalité = 1 point
+    else:
+        return 0, 0, 1  # Défaite = 0 point
 
+# Appliquer la fonction pour calculer les points
+resultats_df["Victoire"], resultats_df["Egalite"], resultats_df["Defaite"] = zip(*resultats_df["Score"].apply(calculer_points))
+
+# Graphique des résultats
 def get_resultats_fig():
     res = resultats_df.copy()
-    points = []
-    for score in res["Score"]:
-        if int(score.split("-")[0]) > int(score.split("-")[1]):
-            points.append(3)  # Victoire = 3 points
-        elif int(score.split("-")[0]) == int(score.split("-")[1]):
-            points.append(1)  # Égalité = 1 point
-        else:
-            points.append(0)  # Défaite = 0 points
     
-    fig = go.Figure([go.Bar(
-        name="Points par match", x=res["Journée"], y=points, marker_color="blue")])
-
-    fig.update_layout(
-        barmode="stack", 
-        title="Points par match de l'équipe",
-        xaxis_title="Journée", 
-        yaxis_title="Points",
-        margin=dict(l=20, r=20, t=60, b=20),
-        annotations=[
-            dict(x=10, y=3, text="Série de victoires ici", showarrow=True, arrowhead=1)
-        ]
-    )
-    return fig
-
-def get_performances_fig():
-    df = performances_df.copy()
+    # Calcul des points pour chaque résultat
     fig = go.Figure([
-        go.Scatter(x=df["Journée"], y=df["Buts Marqués"], mode="lines+markers", name="Buts Marqués", line=dict(color="green")),
-        go.Scatter(x=df["Journée"], y=df["Buts Encaissés"], mode="lines+markers", name="Buts Encaissés", line=dict(color="red")),
-        go.Scatter(x=df["Journée"], y=df["Clean Sheets"], mode="lines+markers", name="Clean Sheets", line=dict(color="blue", dash="dot")),
-        go.Scatter(x=df["Journée"], y=df["Diff_Buts"], mode="lines+markers", name="Différence", line=dict(color="purple", dash="dash"))
+        go.Bar(
+            name="Victoire", 
+            x=res["Journée"], 
+            y=res["Victoire"], 
+            marker_color="green",
+            hoverinfo="x+y+name"
+        ),
+        go.Bar(
+            name="Égalité", 
+            x=res["Journée"], 
+            y=res["Egalite"], 
+            marker_color="yellow",
+            hoverinfo="x+y+name"
+        ),
+        go.Bar(
+            name="Défaite", 
+            x=res["Journée"], 
+            y=res["Defaite"], 
+            marker_color="red",
+            hoverinfo="x+y+name"
+        ),
     ])
+
+    # Mise en page
     fig.update_layout(
-        title="Évolution des performances", 
-        xaxis_title="Journée", 
-        yaxis_title="Valeurs",
-        margin=dict(l=20, r=20, t=60, b=20)
+        title="Résultats de l'équipe par journée",
+        xaxis_title="Journée",
+        yaxis_title="Nombre de matchs",
+        barmode="stack",  # On empile les barres pour chaque journée
+        margin=dict(l=20, r=20, t=60, b=20),
+        legend_title="Résultats",
+        annotations=[
+            dict(x=5, y=2, text="Victoire", showarrow=True, arrowhead=1, font=dict(size=12, color="green")),
+            dict(x=5, y=1, text="Égalité", showarrow=True, arrowhead=1, font=dict(size=12, color="yellow")),
+            dict(x=5, y=0, text="Défaite", showarrow=True, arrowhead=1, font=dict(size=12, color="red"))
+        ]
     )
     return fig
 
@@ -91,25 +90,10 @@ pages = {
         html.Hr()
     ]),
 
-    "Heatmap": html.Div([
-        html.H4("Filtrer par joueur :"),
-        dcc.Dropdown(
-            options=[{"label": j, "value": j} for j in sorted(heatmap_df["Joueur"].unique())],
-            id="joueur-dropdown", placeholder="Choisir un joueur"
-        ),
-        dcc.Graph(id="heatmap-graph"),
-        html.P("Cette heatmap montre les performances individuelles des joueurs par match.", className="mt-2")
-    ]),
-
     "Résultats": html.Div([
         dcc.Graph(figure=get_resultats_fig()),
-        html.P("Analyse des points par match de l'équipe sur chaque journée.", className="mt-2")
+        html.P("Analyse des victoires, égalités et défaites de l'équipe sur chaque journée.", className="mt-2")
     ]),
-
-    "Performances": html.Div([
-        dcc.Graph(figure=get_performances_fig()),
-        html.P("Vue d'ensemble des performances offensives et défensives de l'équipe.", className="mt-2")
-    ])
 }
 
 # Navbar
@@ -120,9 +104,7 @@ navbar = dbc.NavbarSimple(
     dark=False,
     children=[
         dbc.NavItem(dbc.NavLink("Accueil", href="/")),
-        dbc.NavItem(dbc.NavLink("Heatmap", href="/heatmap")),
         dbc.NavItem(dbc.NavLink("Résultats", href="/resultats")),
-        dbc.NavItem(dbc.NavLink("Performances", href="/performances")),
     ]
 )
 
@@ -134,25 +116,11 @@ app.layout = html.Div([
 ])
 
 # Callback routing
-@callback(Output("page-content", "children"), Input("url", "pathname"))
+@app.callback(Output("page-content", "children"), Input("url", "pathname"))
 def render_page(pathname):
-    if pathname == "/heatmap":
-        return pages["Heatmap"]
-    elif pathname == "/resultats":
+    if pathname == "/resultats":
         return pages["Résultats"]
-    elif pathname == "/performances":
-        return pages["Performances"]
     return pages["Accueil"]
-
-# Callback pour heatmap dynamique
-@callback(
-    Output("heatmap-graph", "figure"),
-    Input("joueur-dropdown", "value")
-)
-def update_heatmap(joueur):
-    return get_heatmap_fig(joueur)
-
-import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
